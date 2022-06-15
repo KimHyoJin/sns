@@ -2,6 +2,7 @@ plugins {
 	id 'org.springframework.boot' version '2.7.0'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 	id 'java'
+	id "com.github.node-gradle.node" version "3.3.0"
 }
 
 group = 'com.fastcampus'
@@ -20,7 +21,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
+//	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -32,3 +33,28 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+node {
+	nodeModulesDir = file("$projectDir/front-end")
+	version = '18.3.0'
+	download = true
+}
+
+task npmBuild(type: NpmTask) {
+	args = ['run', "build"]
+}
+
+task copyFrontEnd(type: Copy) {
+	from "$projectDir/front-end/static"
+	into 'build/resources/main/static/.'
+}
+
+task cleanFrontEnd(type: Delete) {
+	delete "$projectDir/front-end/static", "$projectDir/front-end/node_modules"
+}
+
+npmBuild.dependsOn npmInstall
+copyFrontEnd.dependsOn npmBuild
+compileJava.dependsOn copyFrontEnd
+
+clean.dependsOn cleanFrontEnd
